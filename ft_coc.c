@@ -17,18 +17,20 @@ typedef struct s_ply
     int y ;
     int xexit;
     int yexit;
+    int cnb;
     mlx_t* mlx;
     mlx_image_t* wall;
     mlx_image_t* zero;
     mlx_image_t* exit;
     mlx_image_t* player;
     mlx_image_t* coin;
+    mlx_instance_t*	instances;
+
 
 }t_ply;
 
 int county_line(char *file) 
 {
-
     int fd = open(file, O_RDONLY);
     if(fd < 0)
     {
@@ -81,7 +83,7 @@ int ft_error_map(char **str)
         }
         if(res !=1 || coin < 1 || player != 1 || zayd != 0 )
         {
-            ft_putstr("error inside the map");
+            ft_putstr("error or error inside the map");
             return 1;
         }
         return 0;
@@ -93,14 +95,16 @@ int ft_error_wall(char *tmp)
     int i = 0;
         while(tmp[i])
         {
-            if(tmp[i] == '1' || tmp[i] == '\n')
+            if(tmp[i] == '1' && tmp[i] == '\n')
                    i++;
             else
-            {
+                break;
+        
+        }
+        if(tmp[i] == '1' && tmp[i] == '\0')
+        {
                 ft_putstr("error in the wall");
                 return 1;
-            }
-        
         }
     return 0;
     
@@ -158,7 +162,7 @@ int ft_error_line(char **tab)
         len++;
         i++;
     }
-    if(len  != j )
+    if(len  != j)
     {
         ft_putstr("line error in last \n");
         return 1;
@@ -279,7 +283,7 @@ char **ft_read_map(char *mp)
     char **map = malloc((line_count + 1) * sizeof(char *));
     int i = 0;
     char *line;
-    while ((line = get_next_line(fd)) != NULL) //to remove 
+    while ((line = get_next_line(fd)) != NULL || line_count > i) //to remove 
     {
         
         map[i] = line;
@@ -293,11 +297,13 @@ char **ft_read_map(char *mp)
 void print_map(char **map)
 {
     int j = 0;
+
     while(map[j])
     {
+        printf("%s",map[j]);
         j++;
     }
-    write(1,"\n",1);
+    printf("\n");
 }
 
 void ft_graph(t_ply *mpr)
@@ -314,7 +320,7 @@ void ft_graph(t_ply *mpr)
                 mlx_image_to_window(mpr->mlx, mpr->wall, j*50,i*50 );
 
             }
-            if(mpr->map[i][j] == '0')
+            if(mpr->map[i][j] == '0' || mpr->map[i][j] == 'P')
             {
                 mlx_image_to_window(mpr->mlx, mpr->zero, j*50,i*50 );
 
@@ -337,6 +343,50 @@ void ft_graph(t_ply *mpr)
     }
 }
 
+int cnb(char **ply)
+{
+    int i = 0;
+    int j =0;
+    int cnb = 0;
+    while(ply[i])
+    {
+        j= 0;
+        while (ply[i][j])
+        {
+            if(ply[i][j] == 'C')
+                cnb++;
+            j++;
+        }
+        i++;
+    }
+    return cnb;
+}
+
+void exgit(char  **ply)
+{
+    int x = 0;
+    int y = 0;
+    int cn = cnb(ply);
+    while(ply[y])
+    {
+        x = 0;
+        while (ply[y][x])
+        {
+            if(ply[y][x] == 'C')
+                    cn--;
+            x++;
+        }
+        y++;
+    }
+    if(ply[y][x] == 'E' && cnb == 0)
+    {
+        ft_putstr("you win\n");
+        ft_free(ply);
+        return ;
+    }
+    return ;
+}
+
 // #include <MLX42/MLX42.h>
 void ft_hook( mlx_key_data_t keyboard ,void* param)
 {
@@ -348,38 +398,100 @@ void ft_hook( mlx_key_data_t keyboard ,void* param)
                     free(prm);
                     exit(0);
     }
+    int	x;
+	int y;
 
-	if (keyboard.key ==MLX_KEY_UP && prm->map[prm->y - 1][prm->x] != '1'  && (keyboard.action == MLX_PRESS || keyboard.action == MLX_REPEAT)) 
+	y = prm->player->instances->y / 50;
+	x = prm->player->instances->x / 50;
+    printf("\ny =%d\n",prm->player->instances->y);
+    printf("x = %d\n",prm->player->instances->x);
+	if (keyboard.key ==MLX_KEY_UP && prm->map[prm->y-1][prm->x] != '1'  && prm->map[y - 1][x] != 'E'  && (keyboard.action == MLX_PRESS || keyboard.action == MLX_REPEAT)) 
     {
         ft_putstr("UP\n");
+        prm->player->instances->y -=50;
         prm->map[prm->y - 1][prm->x] = 'P';
         prm->map[prm->y][prm->x] = '0' ;
         prm->y = prm->y - 1;
-
-    }        
-	if (keyboard.key ==MLX_KEY_DOWN && prm->map[prm->y + 1][prm->x] != '1' && (keyboard.action == MLX_PRESS || keyboard.action == MLX_REPEAT)) 
-    {
+    }     
+	else if(keyboard.key ==MLX_KEY_DOWN && prm->map[y + 1][x] != '1'  && prm->map[y+1][x] != 'E'  && (keyboard.action == MLX_PRESS || keyboard.action == MLX_REPEAT)) 
+     {
             ft_putstr("DOWN\n");
-            prm->map[prm->y + 1][prm->x] = 'P';
+        prm->player->instances->y +=50;
+        prm->map[prm->y + 1][prm->x] = 'P';
         prm->map[prm->y][prm->x] = '0' ;
-        prm->y = prm->y+1;
-    }
-	if (keyboard.key ==MLX_KEY_LEFT && prm->map[prm->y][prm->x - 1] != '1'  && (keyboard.action == MLX_PRESS || keyboard.action == MLX_REPEAT))
+        prm->y = prm->y + 1;
+     }
+	else if (keyboard.key ==MLX_KEY_LEFT && (prm->map[y][x - 1] != '1'  && prm->map[y][x - 1] != 'E') && (keyboard.action == MLX_PRESS || keyboard.action == MLX_REPEAT))
     {
         ft_putstr("LEFT\n");
-        prm->map[prm->y][prm->x-1] = 'P';
+        prm->player->instances->x -=50;
+        prm->map[prm->y][prm->x - 1] = 'P';
         prm->map[prm->y][prm->x] = '0' ;
         prm->x = prm->x - 1;
     }
-	if (keyboard.key == MLX_KEY_RIGHT && prm->map[prm->y][prm->x + 1] != '1'  && (keyboard.action == MLX_PRESS || keyboard.action == MLX_REPEAT))
+	else if (keyboard.key == MLX_KEY_RIGHT && prm->map[y][x + 1] != '1' && prm->map[y][x + 1] != 'E' && (keyboard.action == MLX_PRESS || keyboard.action == MLX_REPEAT))
     {
         ft_putstr("RIGHT\n");
+        prm->player->instances->x +=50;
         prm->map[prm->y][prm->x+1] = 'P';
         prm->map[prm->y][prm->x] = '0' ;
-        prm->x = prm->x + 1;
+            prm->x = prm->x + 1;
     }
+    else if (keyboard.key ==MLX_KEY_UP &&  cnb(prm->map) == 0 && prm->map[y - 1][x] == 'E'  && (keyboard.action == MLX_PRESS || keyboard.action == MLX_REPEAT)) 
+    {
+        ft_putstr("UP\n");
+        prm->player->instances->y -=50;
+        prm->map[prm->y - 1][prm->x] = 'P';
+        prm->map[prm->y][prm->x] = '0' ;
+        prm->y = prm->y - 1;
+          ft_putstr("you win\n");
+        exit(prm->map[prm->y][prm->x]);
+        ft_free(prm->map);
+        free(prm);
+        exit(0);
+    }     
+	else if(keyboard.key ==MLX_KEY_DOWN && cnb(prm->map) == 0  && prm->map[y+1][x] == 'E'  && (keyboard.action == MLX_PRESS || keyboard.action == MLX_REPEAT)) 
+     {
+            ft_putstr("DOWN\n");
+        prm->player->instances->y +=50;
+        prm->map[prm->y + 1][prm->x] = 'P';
+        prm->map[prm->y][prm->x] = '0' ;
+        prm->y = prm->y + 1;
+          ft_putstr("you win\n");
+        exit(prm->map[prm->y][prm->x]);
+        ft_free(prm->map);
+        free(prm);
+        exit(0);
+     }
+	else if (keyboard.key ==MLX_KEY_LEFT && (cnb(prm->map) == 0  && prm->map[y][x - 1] == 'E') && (keyboard.action == MLX_PRESS || keyboard.action == MLX_REPEAT))
+    {
+        ft_putstr("LEFT\n");
+        prm->player->instances->x -=50;
+        prm->map[prm->y][prm->x - 1] = 'P';
+        prm->map[prm->y][prm->x] = '0' ;
+        prm->x = prm->x - 1;
+          ft_putstr("you win\n");
+        exit(prm->map[prm->y][prm->x]);
+        ft_free(prm->map);
+        free(prm);
+        exit(0);
+    }
+	else if (keyboard.key == MLX_KEY_RIGHT && cnb(prm->map) == 0 && prm->map[y][x + 1] == 'E' && (keyboard.action == MLX_PRESS || keyboard.action == MLX_REPEAT))
+    {
+        ft_putstr("RIGHT\n");
+        prm->player->instances->x +=50;
+        prm->map[prm->y][prm->x+1] = 'P';
+        prm->map[prm->y][prm->x] = '0' ;
+            prm->x = prm->x + 1;
+        ft_putstr("you win\n");
+        exit(prm->map[prm->y][prm->x]);
+        ft_free(prm->map);
+        free(prm);
+        exit(0);
+    }
+    print_map(prm->map);
+    
 
-    ft_graph(prm);
 }
 
 void    ft_init(t_ply *info)
@@ -408,12 +520,11 @@ void    ft_init(t_ply *info)
         }
 }
 
-
 int game(t_ply *mpr)
 {
 
     t_ply x ;
-    int WIDTH = ft_strlen(mpr->map[0])* 50  ;
+    int WIDTH = ft_strlen(mpr->map[0])* 50 - 50;
     int HEIGHT = ft_count_map(mpr->map) * 50 ;
 
     mlx_t* mlx;
@@ -448,58 +559,33 @@ int game(t_ply *mpr)
    mlx_texture_t* texture4 = mlx_load_png("./wero.png");
         mpr->zero = mlx_texture_to_image(mlx, texture4);
         mlx_delete_texture(texture4);
-
-	// if (!(image = mlx_new_image(mlx, WIDTH, HEIGHT )))
-	// {
-    // 	mlx_terminate(mlx);
-    //     // free mpr->map
-	// 	puts(mlx_strerror(mlx_errno));
-	// 	return(EXIT_FAILURE);
-	// }
-
-
-  
     ft_graph(mpr);
-
-	// mlx_image_to_window(mlx, image, 0, 0);
-	mlx_key_hook(mlx, &ft_hook, mpr);
-	
-    
+	mlx_key_hook(mlx, &ft_hook, mpr);    
     mlx_loop(mlx);
 	mlx_terminate(mlx);
 	return (EXIT_SUCCESS);
 }
+int files(int ac, char *av[])
+{
+    if (ac != 2)
+    {
+        printf("name of the map !!\n");
+        return 1;
+    }
 
+    int len = 0;
+    while (av[1][len] != '\0') 
+        len++;
 
-
-
+    if (len < 4 || av[1][len - 1] != 'r' || av[1][len - 2] != 'e' || av[1][len - 3] != 'b' || av[1][len - 4] != '.')
+    {
+        printf("Invalid file extension expected .ber\n");
+        return 1;
+    }
+}
 int main(int ac , char *av[]) 
 {
-    if(ac != 2)
-    {
-        ft_putstr("name of the map !!");
-        exit(1);
-    }
-    int i = 0;
-    while(av[1][i])
-            i++;
-    int j = 0;
-        while(av[1][i])
-        {
-            if(av[1][i] =='r' )
-            {
-                i--;
-                if(av[1][i] =='e')
-                    i--;
-                if(av[1][i] == 'b')
-                    i--;
-                if(av[1][i] == '.')
-                    i--;
-            }
-            else
-                exit(1);
-        }
-
+    files(ac,av);
     
     t_ply *cortab = malloc(sizeof(t_ply));
     
